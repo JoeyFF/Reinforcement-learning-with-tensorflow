@@ -22,8 +22,8 @@ tf.set_random_seed(1)
 class DeepQNetwork:
     def __init__(
             self,
-            n_actions,
-            n_features,
+            n_actions,   # the number of actions
+            n_features,  # the dimension of observation
             learning_rate=0.01,
             reward_decay=0.9,
             e_greedy=0.9,
@@ -68,14 +68,17 @@ class DeepQNetwork:
 
     def _build_net(self):
         # ------------------ build evaluate_net ------------------
-        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input
-        self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')  # for calculating loss
+        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input: state and q_target
+        self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')
+        # for calculating loss = q_target-q_eval
         with tf.variable_scope('eval_net'):
-            # c_names(collections_names) are the collections to store variables
+            # c_names(collections_names) are the collections to store variables of eval_network
+            # for updating variables of target_network
             c_names, n_l1, w_initializer, b_initializer = \
                 ['eval_net_params', tf.GraphKeys.GLOBAL_VARIABLES], 10, \
                 tf.random_normal_initializer(0., 0.3), tf.constant_initializer(0.1)  # config of layers
 
+            # network with two layers
             # first layer. collections is used later when assign to target net
             with tf.variable_scope('l1'):
                 w1 = tf.get_variable('w1', [self.n_features, n_l1], initializer=w_initializer, collections=c_names)
@@ -88,13 +91,16 @@ class DeepQNetwork:
                 b2 = tf.get_variable('b2', [1, self.n_actions], initializer=b_initializer, collections=c_names)
                 self.q_eval = tf.matmul(l1, w2) + b2
 
+        # train in eval_network
+        # calculate loss function = q_target - q_eval
         with tf.variable_scope('loss'):
             self.loss = tf.reduce_mean(tf.squared_difference(self.q_target, self.q_eval))
+        # training--gradient descent
         with tf.variable_scope('train'):
             self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
 
         # ------------------ build target_net ------------------
-        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input
+        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input _state
         with tf.variable_scope('target_net'):
             # c_names(collections_names) are the collections to store variables
             c_names = ['target_net_params', tf.GraphKeys.GLOBAL_VARIABLES]

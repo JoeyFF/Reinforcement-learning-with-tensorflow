@@ -17,9 +17,10 @@ def run_maze():
 
             # RL take action and get next observation and reward
             observation_, reward, done = env.step(action)
-
+            # store replay memory
             RL.store_transition(observation, action, reward, observation_)
 
+            # build up replay memory after 200 steps and learn every 5 steps after that
             if (step > 200) and (step % 5 == 0):
                 RL.learn()
 
