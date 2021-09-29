@@ -22,7 +22,7 @@ tf.set_random_seed(1)
 class DeepQNetwork:
     def __init__(
             self,
-            n_actions,   # the number of actions
+            n_actions,  # the number of actions
             n_features,  # the dimension of observation
             learning_rate=0.01,
             reward_decay=0.9,
@@ -48,12 +48,13 @@ class DeepQNetwork:
         self.learn_step_counter = 0
 
         # initialize zero memory [s, a, r, s_]
-        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))
+        self.memory = np.zeros((self.memory_size, n_features * 2 + 2))  # observation + _observation+action+reward
 
         # consist of [target_net, evaluate_net]
         self._build_net()
         t_params = tf.get_collection('target_net_params')
         e_params = tf.get_collection('eval_net_params')
+        # replace params of target_network with params of eval_network
         self.replace_target_op = [tf.assign(t, e) for t, e in zip(t_params, e_params)]
 
         self.sess = tf.Session()
@@ -68,7 +69,7 @@ class DeepQNetwork:
 
     def _build_net(self):
         # ------------------ build evaluate_net ------------------
-        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input: state and q_target
+        self.s = tf.placeholder(tf.float32, [None, self.n_features], name='s')  # input: state and q_target 定义输入变量
         self.q_target = tf.placeholder(tf.float32, [None, self.n_actions], name='Q_target')
         # for calculating loss = q_target-q_eval
         with tf.variable_scope('eval_net'):
@@ -100,7 +101,7 @@ class DeepQNetwork:
             self._train_op = tf.train.RMSPropOptimizer(self.lr).minimize(self.loss)
 
         # ------------------ build target_net ------------------
-        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')    # input _state
+        self.s_ = tf.placeholder(tf.float32, [None, self.n_features], name='s_')  # input _state
         with tf.variable_scope('target_net'):
             # c_names(collections_names) are the collections to store variables
             c_names = ['target_net_params', tf.GraphKeys.GLOBAL_VARIABLES]
@@ -134,7 +135,7 @@ class DeepQNetwork:
         observation = observation[np.newaxis, :]
 
         if np.random.uniform() < self.epsilon:
-            # forward feed the observation and get q value for every actions
+             # forward feed the observation and get q value for every actions
             actions_value = self.sess.run(self.q_eval, feed_dict={self.s: observation})
             action = np.argmax(actions_value)
         else:
@@ -212,6 +213,3 @@ class DeepQNetwork:
         plt.ylabel('Cost')
         plt.xlabel('training steps')
         plt.show()
-
-
-
